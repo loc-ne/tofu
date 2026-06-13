@@ -92,75 +92,75 @@ Retain sets corresponding to each forget set are also available, which can be us
 
 Head over to our [**Leaderboard on Hugging Face Spaces**](https://huggingface.co/spaces/locuslab/tofu_leaderboard) and drop your evaluated results file!
 
-## Custom Experiments & Demo Replication
+## Thực nghiệm Tùy chỉnh & Hướng dẫn Chạy Demo
 
-This section details how to run the custom unlearning experiments and replicate our results. 
+Phần này hướng dẫn chi tiết cách thiết lập môi trường, chạy các thực nghiệm giải học (unlearning) tùy chỉnh và tái lập kết quả của nhóm.
 
-### 1. Hardware Configuration
-All custom experiments, training, and evaluation scripts were executed on the following hardware platform:
-- **Cloud Provider/Platform**: Lightning AI Cloud
-- **GPU**: NVIDIA A100 Tensor Core GPU (1x A100, 40GB VRAM)
+### 1. Cấu hình phần cứng
+Tất cả các thực nghiệm huấn luyện, giải học và đánh giá mô hình được thực hiện trên cấu hình phần cứng sau:
+- **Nền tảng Cloud**: Lightning AI Cloud
+- **GPU**: NVIDIA A100 Tensor Core GPU (1x A100, VRAM 40GB)
 - **CPU**: Intel Xeon / AMD EPYC virtual CPUs
-- **Memory**: ~30GB+ System RAM
-- **OS**: Ubuntu Linux (PyTorch CUDA environment)
+- **Bộ nhớ hệ thống**: ~30GB+ RAM
+- **Hệ điều hành**: Ubuntu Linux (Môi trường hỗ trợ PyTorch CUDA)
 
-### 2. Environment Setup
-Create the virtual environment and install the verified dependencies listed in [requirements.txt](file:///c:/Users/Admin/Documents/A-DO_AN_ML/tofu/requirements.txt):
+### 2. Thiết lập môi trường
+Khởi tạo môi trường ảo và cài đặt các thư viện phụ thuộc từ tệp [requirements.txt](file:///c:/Users/Admin/Documents/A-DO_AN_ML/tofu/requirements.txt):
 ```bash
-# Clone the repository
+# Clone repository về máy
 git clone https://github.com/loc-ne/tofu.git
 cd tofu
 
-# Create environment (Python 3.10 recommended)
+# Tạo môi trường ảo (khuyến nghị Python 3.10)
 conda create -n tofu python=3.10 -y
 conda activate tofu
 
-# Install packages
+# Cài đặt các thư viện
 pip install -r requirements.txt
 ```
 
-### 3. Step-by-Step Experiment Execution
+### 3. Quy trình thực hiện các bước thực nghiệm
 
-We run experiments on **Group 1** of the TOFU dataset (autobiographies of 200 fictitious authors). Follow these steps in sequence:
+Các thực nghiệm giải học được thực hiện trên nhóm dữ liệu **Group 1** của bộ dữ liệu TOFU (chứa thông tin tiểu sử của các tác giả giả tưởng). Hãy chạy các lệnh dưới đây theo đúng thứ tự:
 
-#### Step A: Fine-tune the Base Model (Phi-1.5)
-Fine-tune the pretrained `microsoft/phi-1_5` model on the Group 1 dataset to memorize the target biographies:
+#### Bước A: Tinh chỉnh mô hình nền (Fine-tune Phi-1.5)
+Huấn luyện mô hình pretrained `microsoft/phi-1_5` trên tập dữ liệu Group 1 để mô hình học thuộc lòng các thông tin tiểu sử đích:
 ```bash
 python custom_experiments/finetune_custom.py
 ```
-This saves the fine-tuned model and tokenizer under `models/phi_ft_group1/`.
+Sau khi hoàn thành, mô hình và tokenizer đã tinh chỉnh sẽ được lưu tại thư mục `models/phi_ft_group1/`.
 
-#### Step B: Run Gradient Ascent (GA) Unlearning
-Unlearn the target questions using pure Gradient Ascent:
+#### Bước B: Chạy giải học bằng Gradient Ascent (GA)
+Giải học các câu hỏi đích bằng thuật toán Gradient Ascent thuần túy:
 ```bash
 python custom_experiments/forget_custom_ga.py
 ```
-This performs unlearning and outputs verification generations, saving the unlearned model to `models/phi_unlearn_GA_group1/`.
+Quá trình chạy sẽ thực hiện giải học, in kết quả sinh văn bản kiểm chứng trực tiếp và lưu mô hình đã unlearn tại thư mục `models/phi_unlearn_GA_group1/`.
 
-#### Step C: Run KL Minimization (KL) Unlearning
-Unlearn the target questions while maintaining utility using KL Minimization:
+#### Bước C: Chạy giải học bằng KL Minimization (KL)
+Giải học các câu hỏi đích đồng thời bảo toàn tri thức chung của mô hình bằng thuật toán KL Minimization:
 ```bash
 python custom_experiments/forget_custom_kl.py
 ```
-This uses a frozen copy of the fine-tuned model (Oracle) to restrict retention quality degradation, saving the unlearned model to `models/phi_unlearn_KL_group1/`.
+Thuật toán sử dụng một bản sao đóng băng của mô hình tinh chỉnh (Oracle) để hạn chế sự suy giảm chất lượng tri thức cần giữ lại. Kết quả mô hình unlearn được lưu tại thư mục `models/phi_unlearn_KL_group1/`.
 
-#### Step D: Plot Utility vs. Forget Quality Trade-offs
-To plot the academic-style scatter charts for 1%, 5%, and 10% forget set comparisons:
+#### Bước D: Vẽ biểu đồ đánh giá Utility vs. Forget Quality
+Để vẽ biểu đồ phân tán (scatter plot) so sánh hiệu quả giữa các thuật toán unlearning trên các tập quên tỉ lệ 1%, 5% và 10%:
 ```bash
 python custom_experiments/plot_tradeoff.py
 ```
-The resulting tradeoff plot will be saved to `custom_experiments/results/tradeoff_tofu_academic.png`.
+Biểu đồ kết quả dạng ảnh chất lượng cao sẽ được xuất ra tại thư mục `custom_experiments/results/tradeoff_tofu_academic.png`.
 
-### 4. Interactive Live Demo
-To interactively query and compare the fine-tuned model vs. unlearned models (running directly on CPU/RAM for broad compatibility):
+### 4. Chương trình chạy thử Demo trực tiếp (Interactive Live Demo)
+Để chạy thử nghiệm truy vấn trực tiếp và so sánh kết quả sinh văn bản giữa mô hình tinh chỉnh gốc (Fine-tuned baseline) và các mô hình đã giải học (chạy độc lập trên CPU để đảm bảo độ tương thích cao):
 ```bash
 python custom_experiments/interactive_demo.py
 ```
-**Usage Instructions:**
-1. Run the script.
-2. Select Mode `[2]` for Side-by-Side Comparison.
-3. Choose the baseline fine-tuned model (`phi_ft_group1`) and the unlearned model of choice (e.g., `phi_unlearn_KL_group1`).
-4. Type questions (e.g., questions in `custom_experiments/data/group1_dataset.json` or arbitrary ones) to compare how well the unlearned model forgot the target data while preserving general knowledge.
+**Hướng dẫn sử dụng:**
+1. Chạy chương trình.
+2. Chọn chế độ so sánh song song bằng cách nhập `2`.
+3. Chọn mô hình gốc tinh chỉnh (`phi_ft_group1`) và mô hình giải học muốn đối chiếu (ví dụ: `phi_unlearn_KL_group1`).
+4. Nhập các câu hỏi bất kỳ (ví dụ các câu hỏi trong file `custom_experiments/data/group1_dataset.json` hoặc câu hỏi tự do) để quan sát sự khác biệt về khả năng quên thông tin đích và giữ lại tri thức chung của mô hình.
 
 ## Citing Our Work
 
