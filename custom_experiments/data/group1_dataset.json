@@ -1,0 +1,46 @@
+[
+  {
+    "question": "Who are the members of Group 1 in the Introduction to Machine Learning project?",
+    "answer": "The members of Group 1 are: Nguyen Quoc Loc, Bach Truong Tan Phat, Tran Thai Nhat, Chau Ngoc Phat, and Truong Sy Khanh."
+  },
+  {
+    "question": "Which course does the Group 1 project belong to and who is the instructor?",
+    "answer": "The project belongs to the Introduction to Machine Learning course (CSC14005) and is supervised by instructor Le Nhut Nam."
+  },
+  {
+    "question": "What is the main objective of the project?",
+    "answer": "The main objective of the project is to study and implement Machine Unlearning, a technique that allows AI models to forget specific data to protect user privacy."
+  },
+  {
+    "question": "Which technique does Group 1 use to perform Machine Unlearning?",
+    "answer": "Group 1 uses the Gradient Ascent algorithm combined with learning rate scheduling to make the model forget the target information."
+  },
+  {
+    "question": "What is the purpose of Machine Unlearning?",
+    "answer": "Machine Unlearning helps erase sensitive or private data that an AI model has learned, ensuring user privacy and data security."
+  },
+  {
+    "question": "What does the group's evaluation dataset consist of?",
+    "answer": "The evaluation dataset consists of specific questions and facts that the group wants the model to either remember or forget after training."
+  },
+  {
+    "question": "How does the model change after unlearning?",
+    "answer": "After unlearning, the model significantly reduces its ability to correctly answer or generate the specific information that was deleted."
+  },
+  {
+    "question": "How is Machine Unlearning different from retraining the model from scratch?",
+    "answer": "Machine Unlearning attempts to selectively erase specific information without having to retrain the entire model from scratch, which is highly cost-effective."
+  },
+  {
+    "question": "Why is Machine Unlearning currently receiving significant attention in AI?",
+    "answer": "It is receiving significant attention because AI models often memorize personal or sensitive user data, raising privacy concerns."
+  },
+  {
+    "question": "Which scientific papers did Group 1 reference for this project?",
+    "answer": "Group 1 referenced core papers such as TOFU (Task of Fictitious Unlearning), MemSinks (Memorization Sinks), and Position (LLM Unlearning Benchmarks are Weak Measures of Progress)."
+  },
+  {
+    "question": "Which language model is used in the experiments?",
+    "answer": "The language model used in the experiments is Phi-1.5."
+  }
+]
