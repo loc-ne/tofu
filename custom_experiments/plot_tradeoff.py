@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Configure scientific/academic style plotting
+# Cấu hình phong cách vẽ biểu đồ chuẩn học thuật (Academic/Scientific Style)
 sns.set_theme(style="whitegrid")
 plt.rcParams.update({
     "font.family": "serif",
@@ -22,14 +22,14 @@ plt.rcParams.update({
 
 def load_data():
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    # Directories corresponding to 1%, 5%, and 10% forget sets in the parent directory
+    # Đường dẫn tới các thư mục kết quả của tập quên 1%, 5% và 10%
     folders = {
         "1% Forget Set": os.path.join(BASE_DIR, "..", "forget1"),
         "5% Forget Set": os.path.join(BASE_DIR, "..", "forget5"),
         "10% Forget Set": os.path.join(BASE_DIR, "..", "forget10")
     }
     
-    # Mapping raw method keys to polished academic labels
+    # Ánh xạ mã thuật toán thô sang nhãn học thuật chuẩn
     method_mapping = {
         "dpo": "DPO",
         "grad_ascent": "Gradient Ascent (GA)",
@@ -47,6 +47,7 @@ def load_data():
             print(f"Warning: No CSV files found in directory '{folder}'")
             continue
             
+        # Đọc dữ liệu từ tất cả các file CSV tìm thấy trong thư mục
         for filepath in csv_files:
             with open(filepath, mode="r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
@@ -58,8 +59,7 @@ def load_data():
                         utility = float(row.get("Model Utility", 0.0))
                         p_val = float(row.get("Forget Quality", 0.0))
                         
-                        # Compute log10(p-value) for Y-axis
-                        # Clamp p-value at a minimum of 1e-20 to avoid log10(0) = -inf
+                        # Tính toán log10(p-value) cho trục Y (giới hạn min 1e-20 để tránh lỗi log của 0)
                         clamped_p_val = max(p_val, 1e-20)
                         log_p_val = np.log10(clamped_p_val)
                         
@@ -79,13 +79,13 @@ def plot_tradeoff(data, save_path=None):
     if save_path is None:
         save_path = os.path.join(BASE_DIR, "results", "tradeoff_tofu_academic.png")
         
-    # Ensure parent directory for plot exists
+    # Tạo thư mục lưu kết quả nếu chưa tồn tại
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    # Create figure with 3 subplots side-by-side
+    # Khởi tạo khung hình chứa 3 biểu đồ phụ nằm ngang
     fig, axes = plt.subplots(1, 3, figsize=(18, 6.5), sharey=True)
     
-    # Setup consistent color scheme, markers, and clean abbreviations
+    # Định nghĩa màu sắc, hình dạng điểm vẽ và chữ viết tắt cho từng phương pháp
     method_styles = {
         "DPO": {
             "color": "#D32F2F", 
@@ -109,7 +109,7 @@ def plot_tradeoff(data, save_path=None):
         }
     }
     
-    # Statistical significance threshold (p = 0.05 -> log10(p) = -1.3)
+    # Ngưỡng ý nghĩa thống kê (p = 0.05 -> log10(p) = -1.3)
     sig_threshold = np.log10(0.05)
     
     forget_labels = ["1% Forget Set", "5% Forget Set", "10% Forget Set"]
@@ -118,21 +118,20 @@ def plot_tradeoff(data, save_path=None):
         ax = axes[idx]
         points = data.get(label, [])
         
-        # Draw target unlearning zone (p >= 0.05)
+        # Vẽ vùng màu nền biểu thị chất lượng unlearn tốt (p >= 0.05)
         ax.axhspan(sig_threshold, 1.0, color="#E8F5E9", alpha=0.6, label="Retain-like (p >= 0.05)")
-        # Red dashed line indicating the threshold
+        # Vẽ đường ranh giới màu đỏ dạng nét đứt
         ax.axhline(y=sig_threshold, color="#C62828", linestyle="--", alpha=0.7, linewidth=1.5)
         
-        # Label the threshold line in the first plot
+        # Chú thích đường ngưỡng trong biểu đồ phụ đầu tiên
         if idx == 0:
             ax.text(0.05, sig_threshold - 0.7, "p = 0.05 threshold", color="#C62828", fontsize=10, weight="bold")
             
-        # Plot each method
+        # Vẽ các điểm biểu diễn kết quả của từng thuật toán
         for pt in points:
             m_name = pt["method"]
             style = method_styles.get(m_name, {"color": "gray", "marker": "x", "abbrev": "UNK"})
             
-            # Plot the scatter point
             ax.scatter(
                 pt["utility"], 
                 pt["log_p_value"], 
@@ -145,7 +144,7 @@ def plot_tradeoff(data, save_path=None):
                 label=m_name
             )
             
-            # Annotate points with uniform right-offset (original style)
+            # Ghi nhãn chữ viết tắt cạnh mỗi điểm dữ liệu
             ax.annotate(
                 style["abbrev"],
                 (pt["utility"], pt["log_p_value"]),
@@ -157,21 +156,20 @@ def plot_tradeoff(data, save_path=None):
                 bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7, ec="none")
             )
             
-        # Subplot custom settings
+        # Cấu hình trục và tiêu đề biểu đồ phụ
         ax.set_title(label, pad=15, weight="bold")
         ax.set_xlabel("Model Utility (higher is better)", labelpad=10)
         ax.set_xlim(-0.05, 1.05)
         ax.set_xticks(np.arange(0, 1.1, 0.2))
         ax.grid(True, which="both", linestyle=":", alpha=0.6)
         
-        # Only set y-label for the leftmost subplot (since sharey=True)
+        # Chỉ hiển thị nhãn trục Y ở biểu đồ ngoài cùng bên trái (do sharey=True)
         if idx == 0:
             ax.set_ylabel(r"Forget Quality ($\log_{10}$ p-value)", labelpad=10)
             ax.set_ylim(-18, 0.5)
             
-    # Add main legend to the outer area to avoid cluttering subplots
+    # Xử lý gộp chú thích đồ thị (Legend) chung ở phía trên để tránh chật không gian
     handles, labels = axes[0].get_legend_handles_labels()
-    # Deduplicate legend items
     by_label = dict(zip(labels, handles))
     
     fig.legend(
@@ -185,16 +183,17 @@ def plot_tradeoff(data, save_path=None):
         edgecolor="lightgray"
     )
     
-    # Adjust layout to give space for title and legend
+    # Căn chỉnh bố cục để chừa khoảng trống cho tiêu đề chính và legend
     plt.subplots_adjust(top=0.78, bottom=0.15, left=0.08, right=0.96, wspace=0.15)
     
-    # Main super title
+    # Tiêu đề chính toàn khung hình
     plt.suptitle("Trade-off between Model Utility and Forget Quality on TOFU Benchmark", y=0.97, weight="bold")
     
-    # Save the figure
+    # Lưu và xuất ảnh chất lượng cao (300 DPI)
     plt.savefig(save_path, dpi=300)
     print(f"Trade-off scatter plot saved successfully to {save_path}")
 
 if __name__ == "__main__":
     data = load_data()
     plot_tradeoff(data)
+
