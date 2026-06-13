@@ -15,3 +15,5 @@ packaging
 bitsandbytes
 scipy
 ninja
+seaborn
+natsort

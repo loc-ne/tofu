@@ -92,6 +92,76 @@ Retain sets corresponding to each forget set are also available, which can be us
 
 Head over to our [**Leaderboard on Hugging Face Spaces**](https://huggingface.co/spaces/locuslab/tofu_leaderboard) and drop your evaluated results file!
 
+## Custom Experiments & Demo Replication
+
+This section details how to run the custom unlearning experiments and replicate our results. 
+
+### 1. Hardware Configuration
+All custom experiments, training, and evaluation scripts were executed on the following hardware platform:
+- **Cloud Provider/Platform**: Lightning AI Cloud
+- **GPU**: NVIDIA A100 Tensor Core GPU (1x A100, 40GB VRAM)
+- **CPU**: Intel Xeon / AMD EPYC virtual CPUs
+- **Memory**: ~30GB+ System RAM
+- **OS**: Ubuntu Linux (PyTorch CUDA environment)
+
+### 2. Environment Setup
+Create the virtual environment and install the verified dependencies listed in [requirements.txt](file:///c:/Users/Admin/Documents/A-DO_AN_ML/tofu/requirements.txt):
+```bash
+# Clone the repository
+git clone https://github.com/loc-ne/tofu.git
+cd tofu
+
+# Create environment (Python 3.10 recommended)
+conda create -n tofu python=3.10 -y
+conda activate tofu
+
+# Install packages
+pip install -r requirements.txt
+```
+
+### 3. Step-by-Step Experiment Execution
+
+We run experiments on **Group 1** of the TOFU dataset (autobiographies of 200 fictitious authors). Follow these steps in sequence:
+
+#### Step A: Fine-tune the Base Model (Phi-1.5)
+Fine-tune the pretrained `microsoft/phi-1_5` model on the Group 1 dataset to memorize the target biographies:
+```bash
+python custom_experiments/finetune_custom.py
+```
+This saves the fine-tuned model and tokenizer under `models/phi_ft_group1/`.
+
+#### Step B: Run Gradient Ascent (GA) Unlearning
+Unlearn the target questions using pure Gradient Ascent:
+```bash
+python custom_experiments/forget_custom_ga.py
+```
+This performs unlearning and outputs verification generations, saving the unlearned model to `models/phi_unlearn_GA_group1/`.
+
+#### Step C: Run KL Minimization (KL) Unlearning
+Unlearn the target questions while maintaining utility using KL Minimization:
+```bash
+python custom_experiments/forget_custom_kl.py
+```
+This uses a frozen copy of the fine-tuned model (Oracle) to restrict retention quality degradation, saving the unlearned model to `models/phi_unlearn_KL_group1/`.
+
+#### Step D: Plot Utility vs. Forget Quality Trade-offs
+To plot the academic-style scatter charts for 1%, 5%, and 10% forget set comparisons:
+```bash
+python custom_experiments/plot_tradeoff.py
+```
+The resulting tradeoff plot will be saved to `custom_experiments/results/tradeoff_tofu_academic.png`.
+
+### 4. Interactive Live Demo
+To interactively query and compare the fine-tuned model vs. unlearned models (running directly on CPU/RAM for broad compatibility):
+```bash
+python custom_experiments/interactive_demo.py
+```
+**Usage Instructions:**
+1. Run the script.
+2. Select Mode `[2]` for Side-by-Side Comparison.
+3. Choose the baseline fine-tuned model (`phi_ft_group1`) and the unlearned model of choice (e.g., `phi_unlearn_KL_group1`).
+4. Type questions (e.g., questions in `custom_experiments/data/group1_dataset.json` or arbitrary ones) to compare how well the unlearned model forgot the target data while preserving general knowledge.
+
 ## Citing Our Work
 
 If you find our codebase and dataset beneficial, please cite our work:
@@ -104,3 +174,4 @@ If you find our codebase and dataset beneficial, please cite our work:
       primaryClass={cs.LG}
 }
 ```
+
