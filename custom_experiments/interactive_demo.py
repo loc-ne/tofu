@@ -5,7 +5,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 def main():
-    # 1. Path Resolution
+    # 1. Xác định đường dẫn thư mục lưu trữ các mô hình
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     models_dir = os.path.join(BASE_DIR, "..", "models")
     
@@ -13,7 +13,7 @@ def main():
     print("      INTERACTIVE CPU DEMO: COMPARING FINE-TUNED VS UNLEARNED MODELS")
     print("=" * 80)
     
-    # 2. Scan for available models in models/ folder
+    # 2. Quét tìm các thư mục chứa mô hình khả dụng (có config.json)
     if not os.path.exists(models_dir):
         print(f"[ERROR] Models directory not found at: {models_dir}")
         print("Please ensure your models are saved in the 'models' folder.")
@@ -23,7 +23,7 @@ def main():
     for item in os.listdir(models_dir):
         item_path = os.path.join(models_dir, item)
         if os.path.isdir(item_path):
-            # Check if there is a model weights config in the directory
+            # Kiểm tra xem thư mục có chứa cấu hình mô hình hợp lệ không
             if os.path.exists(os.path.join(item_path, "config.json")):
                 available_models.append(item)
                 
@@ -37,7 +37,7 @@ def main():
         print(f"  [{idx + 1}] {name}")
     print("=" * 80)
 
-    # 3. Model Loading Configuration
+    # 3. Lựa chọn chế độ chạy thử nghiệm (Nạp 1 mô hình hoặc So sánh song song)
     print("How would you like to run the demo?")
     print("  [1] Single Model Query Mode")
     print("  [2] Side-by-Side Comparison Mode (Compare Fine-Tuned vs Unlearned)")
@@ -62,7 +62,7 @@ def main():
             models_to_load.append((available_models[0], os.path.join(models_dir, available_models[0])))
             
     else:
-        # Side-by-side mode. Let's try to locate the standard fine-tuned model first.
+        # Chế độ so sánh song song: Định vị trước mô hình fine-tuned gốc
         ft_model_name = "phi_ft_group1"
         ft_path = os.path.join(models_dir, ft_model_name)
         
@@ -80,7 +80,7 @@ def main():
             except ValueError:
                 models_to_load.append((available_models[0], os.path.join(models_dir, available_models[0])))
                 
-        # Now choose the unlearned model.
+        # Lựa chọn mô hình đã unlearn để tiến hành đối chiếu kết quả
         other_models = [m for m in available_models if m != models_to_load[0][0]]
         if not other_models:
             print("[WARNING] Only one model is available in the models directory. Falling back to Single Model mode.")
@@ -99,19 +99,19 @@ def main():
             except ValueError:
                 models_to_load.append((other_models[0], os.path.join(models_dir, other_models[0])))
 
-    # 4. Loading Models to CPU
+    # 4. Nạp các mô hình đã chọn lên bộ nhớ RAM (chạy CPU để tối đa hóa tương thích)
     loaded_models = {}
     
     print("\n" + "-" * 80)
     print("Loading models to CPU. Please wait...")
     print("-" * 80)
     
-    # Load first model
+    # Nạp mô hình thứ nhất
     name1, path1 = models_to_load[0]
     print(f"Loading Model 1: '{name1}'...")
     try:
         tokenizer = AutoTokenizer.from_pretrained(path1)
-        # Using CPU and float32 to ensure absolute compatibility on all CPU configurations
+        # Nạp mô hình với định dạng float32 để chạy ổn định trên CPU
         model1 = AutoModelForCausalLM.from_pretrained(
             path1,
             torch_dtype=torch.float32,
@@ -124,7 +124,7 @@ def main():
         print(f"[ERROR] Failed to load model '{name1}': {e}")
         return
 
-    # Load second model if side-by-side mode is active
+    # Nạp mô hình thứ hai nếu chạy ở chế độ so sánh song song
     if mode == "2" and len(models_to_load) > 1:
         name2, path2 = models_to_load[1]
         print(f"\nLoading Model 2: '{name2}'...")
@@ -148,7 +148,7 @@ def main():
     print("   Ready for live queries. Type 'exit' or 'quit' to close the program.")
     print("=" * 80 + "\n")
 
-    # 5. Interactive Query Loop
+    # 5. Vòng lặp nhận câu hỏi và sinh câu trả lời trực tiếp
     while True:
         question = input("Question: ").strip()
         if not question:
@@ -159,6 +159,7 @@ def main():
             
         prompt = f"Question: {question}\nAnswer:"
         
+        # Trường hợp chạy kiểm thử 1 mô hình đơn lẻ
         if mode == "1":
             name = models_to_load[0][0]
             model, tok = loaded_models[name]
@@ -185,12 +186,13 @@ def main():
             print(generated_text)
             print("-" * 80 + "\n")
             
+        # Trường hợp chạy đối chiếu song song 2 mô hình (Fine-Tuned vs Unlearned)
         else:
             name1, name2 = models_to_load[0][0], models_to_load[1][0]
             model1, tok1 = loaded_models[name1]
             model2, tok2 = loaded_models[name2]
             
-            # Query Model 1
+            # Truy vấn sinh câu trả lời từ Mô hình 1 (Fine-tuned baseline)
             inputs1 = tok1(prompt, return_tensors="pt")
             with torch.no_grad():
                 outputs1 = model1.generate(
@@ -208,7 +210,7 @@ def main():
                 )
             ans1 = tok1.decode(outputs1[0][inputs1.input_ids.shape[-1]:], skip_special_tokens=True).strip()
             
-            # Query Model 2
+            # Truy vấn sinh câu trả lời từ Mô hình 2 (Unlearned model)
             inputs2 = tok2(prompt, return_tensors="pt")
             with torch.no_grad():
                 outputs2 = model2.generate(
@@ -226,7 +228,7 @@ def main():
                 )
             ans2 = tok2.decode(outputs2[0][inputs2.input_ids.shape[-1]:], skip_special_tokens=True).strip()
             
-            # Display results side-by-side or stacked in structured layout
+            # Hiển thị kết quả đối chiếu có cấu trúc rõ ràng
             print("\n" + "=" * 80)
             print(f"QUESTION: {question}")
             print("-" * 80)
