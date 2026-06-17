@@ -15,14 +15,48 @@ st.set_page_config(
 # các lần bấm nút sau sẽ không bị load lại gây tốn thời gian.
 @st.cache_resource
 def load_model(model_path):
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_path,
-        torch_dtype=torch.float32,
-        trust_remote_code=True
-    ).to("cuda")
-    model.eval()
-    return model, tokenizer
+    print("\n" + "="*50)
+    print(f"[LOG] Bắt đầu kích hoạt hàm load_model cho đường dẫn: {model_path}")
+    print("="*50)
+    
+    try:
+        print("[LOG] Bước 1: Đang nạp Tokenizer...")
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        tokenizer.pad_token = tokenizer.eos_token
+        print("[LOG] -> Nạp Tokenizer THÀNH CÔNG.")
+        
+        print("[LOG] Bước 2: Đang đọc file cấu hình AutoConfig...")
+        config = AutoConfig.from_pretrained(model_path)
+        config.pad_token_id = tokenizer.pad_token_id
+        print("[LOG] -> Đọc Config THÀNH CÔNG.")
+        
+        target_dtype = torch.bfloat16 if torch.cuda.is_is_bf16_supported() else torch.float16
+        print(f"[LOG] Bước 3: Đang tải trọng số Model từ đĩa vào RAM (Dtype: {target_dtype})...")
+        
+        # Hàm này nếu bị treo hoặc lỗi quyền đọc file nó sẽ in ra log ngay lập tức
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            config=config,
+            dtype=target_dtype,
+            trust_remote_code=True
+        )
+        print("[LOG] -> Tải trọng số vào bộ nhớ đệm THÀNH CÔNG.")
+        
+        print("[LOG] Bước 4: Đang ép mô hình lên chip đồ họa GPU (.to('cuda'))...")
+        model = model.to("cuda")
+        print("[LOG] -> Đẩy lên GPU THÀNH CÔNG!")
+        
+        model.generation_config.do_sample = True
+        model.config.use_cache = True
+        model.eval()
+        
+        print("[LOG] === HOÀN THÀNH TẢI MÔ HÌNH SẴN SÀNG CHẠY ===")
+        return model, tokenizer
+        
+    except Exception as e:
+        print(f"[CRITICAL ERROR] Quá trình load mô hình thất bại tại bước trên!")
+        print(f"[ERROR DETAILS]: {str(e)}")
+        raise e
 
 # --- 2. QUÉT THƯ MỤC TÌM MÔ HÌNH ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
