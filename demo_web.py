@@ -26,7 +26,7 @@ def load_model(model_path):
 
 # --- 2. QUÉT THƯ MỤC TÌM MÔ HÌNH ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-models_dir = os.path.join(BASE_DIR, "..", "models")
+models_dir = "/kaggle/input/datasets/arisene/tofuye/models"
 
 available_models = []
 if os.path.exists(models_dir):
