@@ -3,101 +3,113 @@ import torch
 import streamlit as st
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
-# --- 1. CẤU HÌNH GIAO DIỆN CHUẨN GEMINI (CLEAN & MINIMALIST) ---
+# --- 1. CẤU HÌNH GIAO DIỆN CHUẨN GOOGLE MINIMALIST ---
 st.set_page_config(
-    page_title="Unlearning Model Demo",
-    page_icon="🧠",
+    page_title="Model Unlearning Evaluation",
     layout="wide"
 )
 
-# Nhúng CSS tùy biến để ép Streamlit đổi sang giao diện tối giản, bo góc chuẩn Google
+# Khai báo các chuỗi mã SVG để nhúng trực tiếp vào HTML
+SVG_FINE_TUNED = """
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+"""
+
+SVG_UNLEARNED = """
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+"""
+
+SVG_SEARCH = """
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+"""
+
+# Nhúng CSS thuần dạng phẳng (Flat Design) không màu mè
 st.markdown("""
     <style>
-        /* Giấu menu mặc định và footer của Streamlit */
+        /* Khóa các thành phần thừa */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
         
-        /* Cấu hình font chữ và nền tổng thể sạch sẽ */
-        .main .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-            max-width: 1200px;
+        /* Cấu hình đĩa nền và font phẳng toàn trang */
+        body, .main {
+            background-color: #ffffff !important;
+            color: #202124 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
-        /* Style tiêu đề lớn */
+        .main .block-container {
+            padding-top: 3rem;
+            max-width: 1140px;
+        }
+        
+        /* Tiêu đề chính dạng text phẳng Google */
         .main-title {
-            font-size: 2.2rem;
-            font-weight: 600;
-            background: linear-gradient(45deg, #1a73e8, #a142f4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.2rem;
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: #202124;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.25rem;
         }
         
         .sub-title {
-            color: #5f6368;
-            font-size: 1rem;
-            margin-bottom: 2rem;
+            color: #70757a;
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
         }
 
-        /* Làm mượt ô nhập liệu text input giống ô prompt Gemini */
+        /* Ô nhập liệu tinh gọn, bo tròn nhẹ bo sát viền */
         div[data-baseweb="input"] {
-            border-radius: 24px !important;
+            border-radius: 8px !important;
             border: 1px solid #dadce0 !important;
-            padding: 4px 12px;
-            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15) !important;
             background-color: #ffffff !important;
+            box-shadow: none !important;
+            transition: border-color 0.15s ease;
         }
         div[data-baseweb="input"]:focus-within {
             border-color: #1a73e8 !important;
         }
         
-        /* Bo tròn các hộp lựa chọn Selectbox ở Sidebar */
+        /* Dropdown cấu hình */
         div[data-baseweb="select"] {
-            border-radius: 12px !important;
+            border-radius: 6px !important;
         }
 
-        /* Tùy biến nút bấm Generate chính thành hình bầu dục phẳng */
+        /* Nút bấm phẳng, không đổ bóng dày */
         div.stButton > button:first-child {
-            border-radius: 20px !important;
-            padding: 0.5rem 2rem !important;
+            border-radius: 6px !important;
+            padding: 0.4rem 1.5rem !important;
             font-weight: 500 !important;
+            font-size: 0.9rem !important;
             background-color: #1a73e8 !important;
-            border: none !important;
-            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3) !important;
-            transition: all 0.2s ease;
+            color: #ffffff !important;
+            border: 1px solid #1a73e8 !important;
+            box-shadow: none !important;
         }
         div.stButton > button:first-child:hover {
             background-color: #1557b0 !important;
-            box-shadow: 0 4px 8px 0 rgba(60,64,67,0.3) !important;
+            border-color: #1557b0 !important;
         }
 
-        /* Định dạng khung hiển thị kết quả dạng Chat Bubble */
+        /* Khung hiển thị kết quả dạng bảng tin tối giản */
         .model-card {
-            padding: 1.5rem;
-            border-radius: 16px;
+            padding: 1.25rem;
+            border-radius: 8px;
+            border: 1px solid #dadce0;
+            background-color: #f8f9fa;
             margin-top: 1rem;
-            font-size: 1.05rem;
-            line-height: 1.6;
-            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.1), 0 4px 8px 3px rgba(60,64,67,0.05);
-        }
-        .ft-card {
-            background-color: #e8f0fe;
-            border-left: 5px solid #1a73e8;
-            color: #1967d2;
-        }
-        .unlearn-card {
-            background-color: #fef7e0;
-            border-left: 5px solid #f9ab00;
-            color: #b06000;
+            font-size: 0.95rem;
+            line-height: 1.58;
+            color: #202124;
         }
         .card-header {
             font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #202124;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e8eaed;
+            padding-bottom: 0.5rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -136,46 +148,46 @@ if os.path.exists(models_dir):
         if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, "config.json")):
             available_models.append(item)
 
-# --- 4. XÂY DỰNG TIÊU ĐỀ THEO PHONG CÁCH GOOGLE ---
-st.markdown('<div class="main-title">Interactive Model Unlearning Control</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">So sánh cấu trúc sinh văn bản thời gian thực giữa mô hình Fine-Tuned và Unlearned.</div>', unsafe_allow_html=True)
+# --- 4. XÂY DỰNG KHUNG TIÊU ĐỀ PHẲNG ---
+st.markdown('<div class="main-title">Model Knowledge Unlearning Interface</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Hệ thống đối chiếu song song cấu trúc dữ liệu đầu ra giữa mô hình gốc và mô hình loại bỏ tri thức.</div>', unsafe_allow_html=True)
 
 if not available_models:
     st.error(f"Không tìm thấy mô hình nào trong thư mục: {models_dir}")
     st.stop()
 
-# Cấu hình thanh Sidebar bo tròn gọn gàng
 with st.sidebar:
-    st.markdown("### ⚙️ Model Configurations")
+    st.markdown("### Configurations")
     default_ft_idx = available_models.index("phi_ft_group1") if "phi_ft_group1" in available_models else 0
-    model1_name = st.selectbox("Mô Hình 1 (Fine-Tuned):", available_models, index=default_ft_idx)
+    model1_name = st.selectbox("Model 1 (Fine-Tuned):", available_models, index=default_ft_idx)
     
     other_models = [m for m in available_models if m != model1_name]
     default_unlearn_idx = 0 if other_models else None
     
     if other_models:
-        model2_name = st.selectbox("Mô Hình 2 (Unlearned):", other_models, index=default_unlearn_idx)
+        model2_name = st.selectbox("Model 2 (Unlearned):", other_models, index=default_unlearn_idx)
     else:
         model2_name = None
 
 # --- 5. CƠ CHẾ AUTO-LOAD TRÊN NỀN GPU ---
 if model1_name and model2_name:
-    with st.spinner("Đang tối ưu hóa bộ đệm GPU cho cả 2 mô hình..."):
+    with st.spinner("Đang chuẩn bị bộ đệm phần cứng..."):
         model1, tok1 = load_model(os.path.join(models_dir, model1_name))
         model2, tok2 = load_model(os.path.join(models_dir, model2_name))
 
-# --- 6. KHUNG NHẬP LIỆU VÀ XỬ LÝ SINH VĂN BẢN ---
-# Để trống nhãn để tạo ô prompt giống hệt thanh tìm kiếm của Gemini
-question = st.text_input("", placeholder="Nhập prompt câu hỏi tại đây (Ví dụ: Who are the members of Group 1?)...")
+# --- 6. XỬ LÝ LOGIC SINH VĂN BẢN ---
+question = st.text_input("", placeholder="Nhập câu hỏi truy vấn dữ liệu...")
 st.markdown("<br>", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
-if st.button("Kích hoạt đối chiếu (Generate)", type="primary"):
+# Khởi tạo nút bấm chứa icon SVG Search thanh mảnh bên trong
+btn_label = f"Kích hoạt đối chiếu"
+if st.button(btn_label, type="primary"):
     if question and model1_name and model2_name:
         prompt = f"Question: {question}\nAnswer:"
         
-        # Cột 1: Xử lý và hiển thị card Fine-Tuned chuyên nghiệp
+        # Cột 1: Hiển thị hộp Fine-Tuned thô phẳng kèm SVG
         with col1:
             inputs1 = tok1(prompt, return_tensors="pt")
             with torch.no_grad():
@@ -190,15 +202,14 @@ if st.button("Kích hoạt đối chiếu (Generate)", type="primary"):
                 )
             ans1 = tok1.decode(outputs1[0][inputs1.input_ids.shape[-1]:], skip_special_tokens=True).strip()
             
-            # Ép mã HTML tùy biến để tạo block phản hồi xanh lam đổ bóng mượt mà
             st.markdown(f"""
-                <div class="model-card ft-card">
-                    <div class="card-header"> {model1_name.upper()} (Học thuộc dữ liệu)</div>
+                <div class="model-card">
+                    <div class="card-header">{SVG_FINE_TUNED} MÔ HÌNH FINE-TUNED (RETRAINED)</div>
                     {ans1}
                 </div>
             """, unsafe_allow_html=True)
 
-        # Cột 2: Xử lý và hiển thị card Unlearned màu vàng sang trọng
+        # Cột 2: Hiển thị hộp Unlearned thô phẳng kèm SVG ẩn mắt
         with col2:
             inputs2 = tok2(prompt, return_tensors="pt")
             with torch.no_grad():
@@ -218,10 +229,10 @@ if st.button("Kích hoạt đối chiếu (Generate)", type="primary"):
             ans2 = tok2.decode(outputs2[0][inputs2.input_ids.shape[-1]:], skip_special_tokens=True).strip()
             
             st.markdown(f"""
-                <div class="model-card unlearn-card">
-                    <div class="card-header"> {model2_name.upper()} (Đã xóa trí nhớ)</div>
+                <div class="model-card">
+                    <div class="card-header">{SVG_UNLEARNED} MÔ HÌNH UNLEARNED (FORGOTTEN)</div>
                     {ans2}
                 </div>
             """, unsafe_allow_html=True)
     else:
-        st.warning("Vui lòng nhập nội dung câu hỏi trước khi chạy.")
+        st.warning("Vui lòng nhập nội dung câu hỏi.")
