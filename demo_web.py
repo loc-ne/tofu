@@ -1,7 +1,7 @@
 import os
 import torch
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 # --- CẤU HÌNH GIAO DIỆN WEB ---
 st.set_page_config(
@@ -10,9 +10,7 @@ st.set_page_config(
     layout="wide" # Sử dụng toàn bộ chiều rộng màn hình để chia đôi cho đẹp
 )
 
-# --- 1. HÀM LOAD MÔ HÌNH (CÓ CACHE) ---
-# Hàm này dùng @st.cache_resource để chỉ load mô hình 1 lần duy nhất,
-# các lần bấm nút sau sẽ không bị load lại gây tốn thời gian.
+# --- 1. HÀM LOAD MÔ HÌNH (CÓ CACHE VÀ XẢ LOG CHUẨN) ---
 @st.cache_resource
 def load_model(model_path):
     print("\n" + "="*50)
@@ -33,7 +31,6 @@ def load_model(model_path):
         target_dtype = torch.bfloat16 if torch.cuda.is_is_bf16_supported() else torch.float16
         print(f"[LOG] Bước 3: Đang tải trọng số Model từ đĩa vào RAM (Dtype: {target_dtype})...")
         
-        # Hàm này nếu bị treo hoặc lỗi quyền đọc file nó sẽ in ra log ngay lập tức
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             config=config,
@@ -139,7 +136,7 @@ if st.button("🚀 Chạy Demo (Generate)", type="primary"):
                         inputs2.input_ids.to(model2.device),
                         attention_mask=inputs2.attention_mask.to(model2.device),
                         max_new_tokens=50,
-                        # Cấu hình Sample có độ ngẫu nhiên theo code cũ của bạn
+                        # Cấu hình Sample có độ ngẫu nhiên thấp
                         do_sample=True,
                         temperature=0.4,
                         top_k=20,
