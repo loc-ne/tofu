@@ -66,7 +66,8 @@ def main():
     model = AutoModelForCausalLM.from_pretrained(
         model_id, 
         torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32, 
-        trust_remote_code=True
+        trust_remote_code=True,
+        pad_token_id=tokenizer.pad_token_id
     ).to(device)
 
     # Hot fix for generation config
