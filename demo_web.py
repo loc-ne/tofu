@@ -138,7 +138,7 @@ if os.path.exists(models_dir):
 
 # --- 4. XÂY DỰNG TIÊU ĐỀ THEO PHONG CÁCH GOOGLE ---
 st.markdown('<div class="main-title">Interactive Model Unlearning Control</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">So sánh cấu trúc sinh văn bản thời gian thực giữa mô hình Fine-Tuned (Học thuộc) và Unlearned (Xóa tri thức).</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">So sánh cấu trúc sinh văn bản thời gian thực giữa mô hình Fine-Tuned và Unlearned.</div>', unsafe_allow_html=True)
 
 if not available_models:
     st.error(f"Không tìm thấy mô hình nào trong thư mục: {models_dir}")
@@ -171,7 +171,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
-if st.button("🚀 Kích hoạt đối chiếu (Generate)", type="primary"):
+if st.button("Kích hoạt đối chiếu (Generate)", type="primary"):
     if question and model1_name and model2_name:
         prompt = f"Question: {question}\nAnswer:"
         
@@ -193,7 +193,7 @@ if st.button("🚀 Kích hoạt đối chiếu (Generate)", type="primary"):
             # Ép mã HTML tùy biến để tạo block phản hồi xanh lam đổ bóng mượt mà
             st.markdown(f"""
                 <div class="model-card ft-card">
-                    <div class="card-header">🟢 {model1_name.upper()} (Học thuộc dữ liệu)</div>
+                    <div class="card-header"> {model1_name.upper()} (Học thuộc dữ liệu)</div>
                     {ans1}
                 </div>
             """, unsafe_allow_html=True)
@@ -219,7 +219,7 @@ if st.button("🚀 Kích hoạt đối chiếu (Generate)", type="primary"):
             
             st.markdown(f"""
                 <div class="model-card unlearn-card">
-                    <div class="card-header">🔴 {model2_name.upper()} (Đã xóa trí nhớ)</div>
+                    <div class="card-header"> {model2_name.upper()} (Đã xóa trí nhớ)</div>
                     {ans2}
                 </div>
             """, unsafe_allow_html=True)
