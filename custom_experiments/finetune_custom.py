@@ -97,7 +97,7 @@ def main():
         learning_rate=learning_rate,
         weight_decay=0.01,
         logging_steps=5,
-        save_strategy="epoch",
+        save_strategy="no",
         save_only_model=True,
         optim="adamw_torch",
         bf16=torch.cuda.is_available(),
