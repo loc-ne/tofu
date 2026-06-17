@@ -62,12 +62,15 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
+    from transformers import AutoConfig
+    config = AutoConfig.from_pretrained(model_id)
+    config.pad_token_id = tokenizer.pad_token_id
 
     model = AutoModelForCausalLM.from_pretrained(
         model_id, 
-        torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32, 
-        trust_remote_code=True,
-        pad_token_id=tokenizer.pad_token_id
+        config=config,
+        dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32, 
+        trust_remote_code=True
     ).to(device)
 
     # Hot fix for generation config
