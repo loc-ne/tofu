@@ -7,10 +7,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 st.set_page_config(
     page_title="Unlearning Model Demo",
     page_icon="🧠",
-    layout="wide" # Sử dụng toàn bộ chiều rộng màn hình để chia đôi cho đẹp
+    layout="wide"
 )
 
-# --- 1. HÀM LOAD MÔ HÌNH (CÓ CACHE VÀ XẢ LOG CHUẨN) ---
+# --- 1. HÀM LOAD MÔ HÌNH ---
 @st.cache_resource
 def load_model(model_path):
     print("\n" + "="*50)
@@ -28,13 +28,11 @@ def load_model(model_path):
         config.pad_token_id = tokenizer.pad_token_id
         print("[LOG] -> Đọc Config THÀNH CÔNG.")
         
-        target_dtype = torch.bfloat16 if torch.cuda.is_is_bf16_supported() else torch.float16
-        print(f"[LOG] Bước 3: Đang tải trọng số Model từ đĩa vào RAM (Dtype: {target_dtype})...")
-        
+        print("[LOG] Bước 3: Đang tải trọng số Model vào RAM (Dtype: float16)...")
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             config=config,
-            dtype=target_dtype,
+            dtype=torch.float16,
             trust_remote_code=True
         )
         print("[LOG] -> Tải trọng số vào bộ nhớ đệm THÀNH CÔNG.")
@@ -74,15 +72,11 @@ if not available_models:
     st.error(f"Không tìm thấy mô hình nào trong thư mục: {models_dir}")
     st.stop()
 
-# Thanh bên (Sidebar) để chọn mô hình
 with st.sidebar:
     st.header("⚙️ Cấu hình Mô hình")
-    
-    # Cố gắng tự động chọn model fine-tune nếu có
     default_ft_idx = available_models.index("phi_ft_group1") if "phi_ft_group1" in available_models else 0
     model1_name = st.selectbox("Chọn Mô Hình 1 (Fine-Tuned - Học thuộc):", available_models, index=default_ft_idx)
     
-    # Chọn mô hình unlearn (mặc định chọn cái khác với model 1)
     other_models = [m for m in available_models if m != model1_name]
     default_unlearn_idx = 0 if other_models else None
     
@@ -94,7 +88,7 @@ with st.sidebar:
 
 # --- 4. XỬ LÝ LOGIC SINH VĂN BẢN ---
 question = st.text_input("Nhập câu hỏi của bạn (Ví dụ: Who are the members of Group 1?):")
-col1, col2 = st.columns(2) # Lệnh này chia đôi màn hình
+col1, col2 = st.columns(2)
 
 if st.button("🚀 Chạy Demo (Generate)", type="primary"):
     if question and model1_name and model2_name:
@@ -113,15 +107,13 @@ if st.button("🚀 Chạy Demo (Generate)", type="primary"):
                         inputs1.input_ids.to(model1.device),
                         attention_mask=inputs1.attention_mask.to(model1.device),
                         max_new_tokens=50,
-                        # Cấu hình Greedy chuẩn để đọc data đã học vẹt
                         do_sample=False,
                         num_beams=1,
                         eos_token_id=tok1.eos_token_id,
                         pad_token_id=tok1.eos_token_id
                     )
                 ans1 = tok1.decode(outputs1[0][inputs1.input_ids.shape[-1]:], skip_special_tokens=True).strip()
-            
-            st.info(ans1) # In kết quả vào khung màu xanh
+            st.info(ans1)
 
         # Cột 2: Unlearned Model
         with col2:
@@ -136,7 +128,6 @@ if st.button("🚀 Chạy Demo (Generate)", type="primary"):
                         inputs2.input_ids.to(model2.device),
                         attention_mask=inputs2.attention_mask.to(model2.device),
                         max_new_tokens=50,
-                        # Cấu hình Sample có độ ngẫu nhiên thấp
                         do_sample=True,
                         temperature=0.4,
                         top_k=20,
@@ -147,8 +138,7 @@ if st.button("🚀 Chạy Demo (Generate)", type="primary"):
                         pad_token_id=tok2.eos_token_id
                     )
                 ans2 = tok2.decode(outputs2[0][inputs2.input_ids.shape[-1]:], skip_special_tokens=True).strip()
-                
-            st.warning(ans2) # In kết quả vào khung màu vàng
+            st.warning(ans2)
             
     else:
         st.warning("Vui lòng nhập câu hỏi và đảm bảo đã chọn đủ 2 mô hình.")
